@@ -14,7 +14,7 @@ env:
   TF_VAR_hcloud_token: "${{ secrets.TF_VAR_HCLOUD_TOKEN }}"
   TF_VAR_tailscale_auth_key: "${{ secrets.TF_VAR_TAILSCALE_AUTH_KEY }}"
   TF_VAR_tailscale_api_key: "${{ secrets.TF_VAR_TAILSCALE_API_KEY }}"
-  TF_VAR_tailscale_user: "${{ secrets.TF_VAR_TAILSCALE_ERROR }}"
+  TF_VAR_tailscale_user: "${{ secrets.TF_VAR_TAILSCALE_USER }}"
   CONFIG_DIRECTORY: "deployment"
 
 jobs:
