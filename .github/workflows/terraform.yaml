@@ -30,16 +30,21 @@ jobs:
 
       - name: Check Terraform format
         run: terraform fmt -check
+        working-directory: deployment
 
       - name: Terraform init
         run: terraform init
+        working-directory: deployment
 
       - name: Terraform validate
         run: terraform validate -no-color
+        working-directory: deployment
 
       - name: Terraform plan
         run: terraform plan -no-color -input=false
+        working-directory: deployment
 
       - name: Terraform apply
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve -input=false
+        working-directory: deployment
