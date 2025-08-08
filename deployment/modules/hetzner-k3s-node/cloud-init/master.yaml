@@ -1,0 +1,33 @@
+#cloud-config
+runcmd:
+  # 1. Instala y conecta Tailscale
+  - curl -fsSL https://tailscale.com/install.sh | sh
+  - tailscale up --authkey ${tailscale_auth_key} --hostname "$(hostname)" --ssh
+
+  # 2. Espera a que tailscale esté listo y obtiene la IP
+  - while ! ip -4 -o addr show dev tailscale0; do sleep 1; done
+  - export TS_IP=$(ip -4 -o addr show dev tailscale0 | awk '{split($4,a,"/"); print a[1]}')
+  - export PRIVATE_IP=$(ip -4 -o addr | awk '{split($4,a,"/"); print $2, a[1]}' | grep -E ' (10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)' | head -n1 | awk '{print $2}')
+
+  # 3. Desactiva systemd-resolved y configura resolv.conf
+  - systemctl stop systemd-resolved
+  - systemctl disable systemd-resolved
+  - rm -f /etc/resolv.conf
+  - printf "nameserver 1.1.1.1\nnameserver 8.8.8.8" > /etc/resolv.conf
+
+  # # 4. Instala UFW, permite solo SSH por tailscale0 y bloquea en eth0
+  - apt-get update && apt-get install -y ufw
+  - ufw allow in on enp7s0 to any port 6443 proto tcp comment 'K3s API server (priv)'
+  - ufw allow in on enp7s0 to any port 8472 proto udp comment 'Flannel VXLAN (priv)'
+  - ufw allow in on enp7s0 to any port 10250 proto tcp comment 'Metrics (priv)'
+  - ufw allow from 10.42.0.0/16 to $PRIVATE_IP port 6443 proto tcp comment 'API server from pods'
+  - ufw allow in on enp7s0 to any port 8000 proto tcp comment 'Traefik 80 (priv)'
+  - ufw allow in on enp7s0 to any port 8443 proto tcp comment 'Traefik 443 (priv)'
+  - ufw allow in on tailscale0 to any port 22 proto tcp comment '(SSH Tailscale)'
+  - ufw deny in on eth0 to any port 22 proto tcp comment '(Deny public SSH)'
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw --force enable
+
+  # # 5. Instala K3s master 
+  - curl -sfL https://get.k3s.io | K3S_RESOLV_CONF="/etc/resolv.conf" K3S_TOKEN="${k3s_token}" sh -s - server --cluster-init --tls-san $TS_IP --tls-san $PRIVATE_IP --node-ip $PRIVATE_IP --flannel-iface enp7s0
