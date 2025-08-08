@@ -38,14 +38,7 @@ jobs:
         run: terraform validate -no-color
 
       - name: Terraform plan
-        if: github.event_name == 'pull_request'
-        id: plan
         run: terraform plan -no-color -input=false
-        continue-on-error: true
-
-      - name: Fail if plan fails
-        if: steps.plan.outcome == 'failure'
-        run: exit 1
 
       - name: Terraform apply
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
