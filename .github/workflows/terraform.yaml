@@ -19,7 +19,6 @@ jobs:
       contents: read
       pull-requests: write
 
-    # Aplica working-directory a todos los steps con run:
     defaults:
       run:
         working-directory: ${{ env.CONFIG_DIRECTORY }}
@@ -33,8 +32,10 @@ jobs:
         with:
           terraform_wrapper: false
 
-      - name: Check Terraform format
-        run: terraform fmt -recursive -check
+      - name: Format & check Terraform
+        run: |
+          terraform fmt -recursive
+          terraform fmt -recursive -check
 
       - name: Terraform init
         run: terraform init
